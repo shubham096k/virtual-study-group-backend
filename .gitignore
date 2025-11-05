@@ -1,0 +1,46 @@
+# Python
+_pycache_/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*$py.class
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Django stuff
+*.log
+*.pot
+*.pyc
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# VSCode / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Environment variables / secrets
+.env
+*.env
+
+# Coverage / testing
+htmlcov/
+.coverage
+.tox/
+.nox/
+.pytest_cache/
+
+# Migrations cache
+*/migrations/_pycache_/
