@@ -41,9 +41,18 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
 
 class GroupViewSet(viewsets.ModelViewSet):
-    queryset = Group.objects.all().order_by('-created_at')
     serializer_class = GroupSerializer
     permission_classes = (IsAuthenticated,)
+    
+    def get_queryset(self):
+        user = self.request.user
+
+        # All groups where user is already a member
+        member_groups = GroupMembership.objects.filter(
+            user=user).values_list('group', flat=True)
+
+        # Show only groups user is NOT part of
+        return Group.objects.exclude(id__in=member_groups)
 
     def perform_create(self, serializer):
         group = serializer.save(created_by=self.request.user)
@@ -73,10 +82,30 @@ class GroupViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(
                 "Only the group creator can delete this group.")
         instance.delete()
+    
+    @action(detail=False, methods=['get'], url_path='my-groups')
+    def my_groups(self, request):
+        """Return groups where the user is a MEMBER (not admin)."""
+        member_groups = Group.objects.filter(
+            memberships__user=request.user,
+            memberships__role='member'
+        ).distinct()
+
+        serializer = self.get_serializer(member_groups, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='my-admin-groups')
+    def my_admin_groups(self, request):
+        """Return groups where the user is an ADMIN (either creator or role='admin')."""
+        admin_groups = Group.objects.filter(
+            Q(created_by=request.user) |
+            Q(memberships__user=request.user, memberships__role='admin')
+        ).distinct()
+        serializer = self.get_serializer(admin_groups, many=True)
+        return Response(serializer.data)
+
 
 # Task ViewSet
-
-
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all().order_by('-created_at')
     serializer_class = TaskSerializer
@@ -238,15 +267,24 @@ class StudySessionViewSet(viewsets.ModelViewSet):
         queryset = StudySession.objects.filter(
             group__in=member_groups).order_by('-start_time')
 
-        # Optional filtering by group
+        # Filter by group
         group_id = self.request.query_params.get('group')
         if group_id:
             queryset = queryset.filter(group_id=group_id)
+
+        # Filter by status
+        status_param = self.request.query_params.get('status')
+        now = timezone.now()
+
+        if status_param == 'active':
+            queryset = queryset.filter(end_time__gte=now)
+        elif status_param == 'completed':
+            queryset = queryset.filter(end_time__lt=now)
+
         return queryset
 
+
 # TimerSession ViewSet
-
-
 class TimerSessionViewSet(viewsets.ModelViewSet):
     queryset = TimerSession.objects.all().order_by('-started_at')
     serializer_class = TimerSessionSerializer

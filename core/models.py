@@ -108,6 +108,14 @@ class StudySession(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.group.name})"
+    
+    @property
+    def status(self):
+        """Returns 'active' if session is ongoing, 'completed' if past."""
+        now = timezone.now()
+        if self.end_time < now:
+            return "completed"
+        return "active"
 
 
 # TimerSession (user personal sessions)

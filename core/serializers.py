@@ -95,13 +95,18 @@ class DocumentSerializer(serializers.ModelSerializer):
 # StudySession Serializer
 class StudySessionSerializer(serializers.ModelSerializer):
     tasks_count = serializers.SerializerMethodField()
-
+    status = serializers.SerializerMethodField()
+    
     class Meta:
         model = StudySession
-        fields = ('id', 'group', 'title', 'description', 'start_time', 'end_time', 'tasks_count')
+        fields = ('id', 'group', 'title', 'description',
+                  'start_time', 'end_time', 'tasks_count', 'status')
 
     def get_tasks_count(self, obj):
         return obj.tasks.count()
+    
+    def get_status(self, obj):
+        return obj.status  # Uses the @property from the model
     
     def validate(self, attrs):
         start = attrs.get('start_time')

@@ -132,6 +132,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Django REST Framework + JWT settings
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
