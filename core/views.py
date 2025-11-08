@@ -138,17 +138,17 @@ class TaskViewSet(viewsets.ModelViewSet):
                 'You must be a member of the group to create a session task')
         serializer.save(created_by=self.request.user)
 
-    def destroy(self, request, *args, **kwargs):
-        task = self.get_object()
-        group = task.session.group
-        membership = GroupMembership.objects.filter(
-            group=group, user=request.user).first()
+    # def destroy(self, request, *args, **kwargs):
+    #     task = self.get_object()
+    #     group = task.session.group
+    #     membership = GroupMembership.objects.filter(
+    #         group=group, user=request.user).first()
 
-        # Only creator or group admin can delete
-        if task.created_by == request.user or (membership and membership.role == 'admin'):
-            return super().destroy(request, *args, **kwargs)
-        else:
-            return Response({'detail': 'Only task creator or group admin can delete this task.'}, status=status.HTTP_403_FORBIDDEN)
+    #     # Only creator or group admin can delete
+    #     if task.created_by == request.user or (membership and membership.role == 'admin'):
+    #         return super().destroy(request, *args, **kwargs)
+    #     else:
+    #         return Response({'detail': 'Only task creator or group admin can delete this task.'}, status=status.HTTP_403_FORBIDDEN)
 
     def get_queryset(self):
         user = self.request.user
@@ -218,19 +218,19 @@ class DocumentViewSet(viewsets.ModelViewSet):
             Q(group__in=admin_groups)
         ).order_by('-uploaded_at')
 
-    def destroy(self, request, *args, **kwargs):
-        document = self.get_object()
-        # check if the user is admin of the document's group
-        is_admin = GroupMembership.objects.filter(
-            group=document.group,
-            user=request.user,
-            role='admin'
-        ).exists() or request.user.is_superuser
+    # def destroy(self, request, *args, **kwargs):
+    #     document = self.get_object()
+    #     # check if the user is admin of the document's group
+    #     is_admin = GroupMembership.objects.filter(
+    #         group=document.group,
+    #         user=request.user,
+    #         role='admin'
+    #     ).exists() or request.user.is_superuser
 
-        if not is_admin:
-            raise PermissionDenied("Only group admins can delete documents.")
+    #     if not is_admin:
+    #         raise PermissionDenied("Only group admins can delete documents.")
 
-        return super().destroy(request, *args, **kwargs)
+    #     return super().destroy(request, *args, **kwargs)
 
 
 # StudySession ViewSet
