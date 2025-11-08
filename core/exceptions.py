@@ -93,3 +93,26 @@ def custom_exception_handler(exc, context):
 
     # For unhandled exceptions (fallback)
     return Response(error_response, status=error_response["status_code"])
+
+
+def custom_not_found_view(request, exception):
+    return Response({
+        "success": False,
+        "status_code": 404,
+        "message": "The requested resource was not found.",
+        "details": str(exception)
+    }, status=status.HTTP_404_NOT_FOUND)
+
+
+def custom_server_error_view(request):
+    logger.error("Internal server error", exc_info=True)
+    return Response({
+        "success": False,
+        "status_code": 500,
+        "message": "Something went wrong on our side. Please try again later.",
+        "details": "Internal server error."
+    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+handler404 = custom_not_found_view
+handler500 = custom_server_error_view

@@ -43,32 +43,29 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class GroupViewSet(viewsets.ModelViewSet):
     serializer_class = GroupSerializer
     permission_classes = (IsAuthenticated,)
-    
+
     def get_queryset(self):
-        user = self.request.user
-
-        # All groups where user is already a member
-        member_groups = GroupMembership.objects.filter(
-            user=user).values_list('group', flat=True)
-
-        # Show only groups user is NOT part of
-        return Group.objects.exclude(id__in=member_groups)
+        """
+        Default: /api/groups/ → Fetch ALL groups in the system (irrespective of joined or not)
+        """
+        return Group.objects.all().order_by('-created_at')
 
     def perform_create(self, serializer):
         group = serializer.save(created_by=self.request.user)
-        # creator becomes a group admin
+        # creator automatically becomes group admin
         GroupMembership.objects.create(
-            user=self.request.user, group=group, role='admin')
+            user=self.request.user, group=group, role='admin'
+        )
 
     @action(detail=True, methods=['post'], url_path='join')
     def join_group(self, request, pk=None):
         group = self.get_object()
-        # prevent duplicates
         membership, created = GroupMembership.objects.get_or_create(
-            user=request.user, group=group, defaults={'role': 'member'})
+            user=request.user, group=group, defaults={'role': 'member'}
+        )
         if created:
             return Response({'detail': 'Joined group'}, status=status.HTTP_201_CREATED)
-        return Response({'detail': 'Already member'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'Already a member'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='leave')
     def leave_group(self, request, pk=None):
@@ -82,27 +79,46 @@ class GroupViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(
                 "Only the group creator can delete this group.")
         instance.delete()
-    
+
+    # 🧩 New and updated endpoints
+
     @action(detail=False, methods=['get'], url_path='my-groups')
     def my_groups(self, request):
-        """Return groups where the user is a MEMBER (not admin)."""
+        """
+        /api/groups/my-groups/
+        → Groups where the user is a MEMBER (not creator)
+        """
         member_groups = Group.objects.filter(
-            memberships__user=request.user,
-            memberships__role='member'
-        ).distinct()
-
+            memberships__user=request.user
+        ).exclude(created_by=request.user).distinct()
         serializer = self.get_serializer(member_groups, many=True)
         return Response(serializer.data)
-    
+
     @action(detail=False, methods=['get'], url_path='my-admin-groups')
     def my_admin_groups(self, request):
-        """Return groups where the user is an ADMIN (either creator or role='admin')."""
-        admin_groups = Group.objects.filter(
-            Q(created_by=request.user) |
-            Q(memberships__user=request.user, memberships__role='admin')
-        ).distinct()
+        """
+        /api/groups/my-admin-groups/
+        → Groups that the user has CREATED
+        """
+        admin_groups = Group.objects.filter(created_by=request.user).distinct()
         serializer = self.get_serializer(admin_groups, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='explore-groups')
+    def explore_groups(self, request):
+        """
+        /api/groups/explore-groups/
+        → Groups that user hasn't joined yet
+        """
+        user = request.user
+        joined_group_ids = GroupMembership.objects.filter(
+            user=user
+        ).values_list('group_id', flat=True)
+        groups_to_join = Group.objects.exclude(
+            id__in=joined_group_ids).order_by('-created_at')
+        serializer = self.get_serializer(groups_to_join, many=True)
+        return Response(serializer.data)
+
 
 
 # Task ViewSet
@@ -282,7 +298,6 @@ class StudySessionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(end_time__lt=now)
 
         return queryset
-
 
 # TimerSession ViewSet
 class TimerSessionViewSet(viewsets.ModelViewSet):

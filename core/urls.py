@@ -12,8 +12,8 @@ router.register(r'groups', GroupViewSet, basename='group')
 router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'documents', DocumentViewSet, basename='document')
 router.register(r'sessions', StudySessionViewSet, basename='session')
-router.register(r'timers', TimerSessionViewSet, basename='timer')
-router.register(r'notifications', NotificationViewSet, basename='notification')
+# router.register(r'timers', TimerSessionViewSet, basename='timer')
+# router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'document-comments', DocumentCommentViewSet, basename='documentcomment')
 
 urlpatterns = [
